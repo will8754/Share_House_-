@@ -10,21 +10,24 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #0f0f11;
-    --surface: #18181c;
-    --surface2: #222228;
-    --border: #2e2e38;
-    --text: #e8e8ec;
-    --text2: #888892;
-    --text3: #55555f;
-    --green: #3ecf8e;
-    --green-bg: rgba(62,207,142,0.08);
-    --red: #f05252;
-    --red-bg: rgba(240,82,82,0.08);
-    --amber: #f5a623;
-    --amber-bg: rgba(245,166,35,0.08);
-    --blue: #5b8af0;
-    --accent: #7c5cfc;
+    /* 核心背景与文字颜色切换 */
+    --bg: #ffffff;           /* 纯白背景 */
+    --surface: #f7f7f9;      /* 浅灰色卡片背景 */
+    --surface2: #edf0f3;     /* 稍深的灰色（用于输入框等） */
+    --border: #e1e4e8;       /* 浅色边框 */
+    --text: #1a1a1c;         /* 深色主文字 */
+    --text2: #62626e;        /* 次要文字 */
+    --text3: #a0a0ab;        /* 禁用或提示文字 */
+
+    /* 状态色保持鲜艳，但稍微增加背景的不透明度以便在白底上更明显 */
+    --green: #10b981;
+    --green-bg: rgba(16, 185, 129, 0.1);
+    --red: #ef4444;
+    --red-bg: rgba(239, 68, 68, 0.1);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245, 158, 11, 0.1);
+    --blue: #3b82f6;
+    --accent: #6366f1;
   }
 
   body {
