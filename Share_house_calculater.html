@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>シェアハウス 收益模拟计算器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f11;
+    --surface: #18181c;
+    --surface2: #222228;
+    --border: #2e2e38;
+    --text: #e8e8ec;
+    --text2: #888892;
+    --text3: #55555f;
+    --green: #3ecf8e;
+    --green-bg: rgba(62,207,142,0.08);
+    --red: #f05252;
+    --red-bg: rgba(240,82,82,0.08);
+    --amber: #f5a623;
+    --amber-bg: rgba(245,166,35,0.08);
+    --blue: #5b8af0;
+    --accent: #7c5cfc;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .container { width: 100%; max-width: 720px; }
+
+  .header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.2rem; }
+  .header-top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  .title { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: var(--text); }
+  .subtitle { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .badge { font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--border); color: var(--text3); }
+
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 560px) { .layout { grid-template-columns: 1fr; } }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; }
+  .card-title { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; color: var(--text3); text-transform: uppercase; margin-bottom: 1rem; }
+
+  .slider-row { margin-bottom: 14px; }
+  .slider-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .slider-label { font-size: 12px; color: var(--text2); }
+  .slider-val { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text); font-weight: 500; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 2px;
+    background: var(--border); border-radius: 2px; outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--accent);
+    border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--accent);
+    transition: transform 0.15s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+  input[type=range]::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--bg); cursor: pointer;
+  }
+
+  .results { margin-top: 1.5rem; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  @media (max-width: 400px) { .result-grid { grid-template-columns: 1fr; } }
+
+  .result-card { border-radius: 8px; padding: 12px 14px; border: 1px solid transparent; transition: all 0.3s ease; }
+  .result-card.green { background: var(--green-bg); border-color: rgba(62,207,142,0.2); }
+  .result-card.red   { background: var(--red-bg);   border-color: rgba(240,82,82,0.2); }
+  .result-card.neutral { background: var(--surface2); border-color: var(--border); }
+
+  .result-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .result-card.green .result-label { color: var(--green); }
+  .result-card.red   .result-label { color: var(--red); }
+  .result-card.neutral .result-label { color: var(--text2); }
+
+  .result-num { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; line-height: 1; }
+  .result-card.green .result-num { color: var(--green); }
+  .result-card.red   .result-num { color: var(--red); }
+  .result-card.neutral .result-num { color: var(--text); }
+
+  .result-sub { font-size: 11px; color: var(--text3); margin-top: 3px; font-family: 'DM Mono', monospace; }
+
+  .summary { border-radius: 8px; padding: 12px 16px; font-size: 13px; line-height: 1.7; transition: all 0.3s; }
+  .summary.green { background: var(--green-bg); border: 1px solid rgba(62,207,142,0.15); color: var(--green); }
+  .summary.red   { background: var(--red-bg);   border: 1px solid rgba(240,82,82,0.15);  color: var(--red); }
+  .summary strong { font-weight: 500; }
+
+  .detail-section { margin-top: 1.5rem; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 500px) { .detail-grid { grid-template-columns: 1fr; } }
+
+  .detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .detail-title { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .detail-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row .k { color: var(--text2); }
+  .detail-row .v { font-family: 'DM Mono', monospace; color: var(--text); font-size: 12px; }
+
+  .advice { margin-top: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; }
+  .advice-title { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; color: var(--text3); text-transform: uppercase; margin-bottom: 1rem; }
+  .advice-row { display: flex; gap: 10px; margin-bottom: 8px; font-size: 12px; line-height: 1.6; align-items: flex-start; }
+  .advice-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .advice-dot.green { background: var(--green); }
+  .advice-dot.red   { background: var(--red); }
+  .advice-dot.amber { background: var(--amber); }
+  .advice-text { color: var(--text2); }
+  .advice-text strong { color: var(--text); font-weight: 500; }
+
+  .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 11px; color: var(--text3); line-height: 1.8; font-family: 'DM Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="header-top">
+      <span class="title">シェアハウス 收益模拟</span>
+      <span class="badge">埼玉周边 · 2025</span>
+    </div>
+    <div class="subtitle">// 拖动滑块实时计算现金流</div>
+  </div>
+
+  <div class="layout">
+    <div class="card">
+      <div class="card-title">物件 &amp; 资金设定</div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">🏠 物件购入价格</span><span class="slider-val" id="price-v">600万</span></div>
+        <input type="range" id="price" min="300" max="3000" step="50" value="600" oninput="calc()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">💰 头金（自备款）</span><span class="slider-val" id="down-v">100万</span></div>
+        <input type="range" id="down" min="0" max="1000" step="10" value="100" oninput="calc()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">🔧 改装装修费</span><span class="slider-val" id="reform-v">120万</span></div>
+        <input type="range" id="reform" min="50" max="300" step="10" value="120" oninput="calc()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">🏦 贷款年利率</span><span class="slider-val" id="rate-v">4.0%</span></div>
+        <input type="range" id="rate" min="2" max="8" step="0.5" value="4" oninput="calc()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">📅 贷款年数</span><span class="slider-val" id="years-v">20年</span></div>
+        <input type="range" id="years" min="10" max="30" step="5" value="20" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">运营设定</div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">🚪 可出租间数</span><span class="slider-val" id="rooms-v">4间</span></div>
+        <input type="range" id="rooms" min="3" max="8" step="1" value="4" oninput="calc()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">💴 每间月租金</span><span class="slider-val" id="rent-v">3.8万</span></div>
+        <input type="range" id="rent" min="25000" max="60000" step="1000" value="38000" oninput="calc()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">📊 平均入住率</span><span class="slider-val" id="occ-v">80%</span></div>
+        <input type="range" id="occ" min="50" max="100" step="5" value="80" oninput="calc()">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">💡 月运营费用</span><span class="slider-val" id="opex-v">1.5万</span></div>
+        <input type="range" id="opex" min="5000" max="40000" step="1000" value="15000" oninput="calc()">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">含：水电网费・消防・杂费</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="results">
+    <div class="result-grid">
+      <div class="result-card green">
+        <div class="result-label">月租金净收入</div>
+        <div class="result-num" id="r-income">—</div>
+        <div class="result-sub" id="r-income-sub"></div>
+      </div>
+      <div class="result-card neutral">
+        <div class="result-label">月还贷款额</div>
+        <div class="result-num" id="r-loan">—</div>
+        <div class="result-sub" id="r-loan-sub"></div>
+      </div>
+      <div class="result-card" id="profit-card">
+        <div class="result-label" id="r-profit-label">月净剩余</div>
+        <div class="result-num" id="r-profit">—</div>
+        <div class="result-sub" id="r-profit-sub"></div>
+      </div>
+    </div>
+    <div class="summary" id="summary"></div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-grid">
+      <div class="detail-card">
+        <div class="detail-title">资金计划</div>
+        <div class="detail-row"><span class="k">物件购入</span><span class="v" id="d-price"></span></div>
+        <div class="detail-row"><span class="k">改装费用</span><span class="v" id="d-reform"></span></div>
+        <div class="detail-row"><span class="k">家具家电(估)</span><span class="v">約50万円</span></div>
+        <div class="detail-row"><span class="k">登记诸费用(估)</span><span class="v">約40万円</span></div>
+        <div class="detail-row"><span class="k" style="color:var(--text);font-weight:500">总投入(估)</span><span class="v" id="d-total" style="color:var(--amber)"></span></div>
+        <div class="detail-row"><span class="k">其中自备</span><span class="v" id="d-down"></span></div>
+        <div class="detail-row"><span class="k">贷款总额</span><span class="v" id="d-loanamt"></span></div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-title">收益分析</div>
+        <div class="detail-row"><span class="k">满室月收入</span><span class="v" id="d-full"></span></div>
+        <div class="detail-row"><span class="k">实收(入住率)</span><span class="v" id="d-real"></span></div>
+        <div class="detail-row"><span class="k">运营费/月</span><span class="v" id="d-opex"></span></div>
+        <div class="detail-row"><span class="k">还款总利息</span><span class="v" id="d-interest"></span></div>
+        <div class="detail-row"><span class="k">年净收入</span><span class="v" id="d-annual"></span></div>
+        <div class="detail-row"><span class="k" style="color:var(--text);font-weight:500">自有资金回报率</span><span class="v" id="d-roi" style="color:var(--blue)"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="advice">
+    <div class="advice-title">物件选择建议</div>
+    <div class="advice-row">
+      <div class="advice-dot green"></div>
+      <div class="advice-text"><strong>格局优先选4LDK・5LDK</strong>，自然分间最省改装费，目标各间4.5〜6畳独立锁门。</div>
+    </div>
+    <div class="advice-row">
+      <div class="advice-dot green"></div>
+      <div class="advice-text"><strong>车站徒步15分钟以内</strong>，川口・草加・越谷・蕨等沿线站。距离直接决定租金上限。</div>
+    </div>
+    <div class="advice-row">
+      <div class="advice-dot amber"></div>
+      <div class="advice-text"><strong>建筑面积80㎡以上</strong>，太小隔不出足够间数，共用空间（厨房浴室）也会显得拥挤。</div>
+    </div>
+    <div class="advice-row">
+      <div class="advice-dot amber"></div>
+      <div class="advice-text"><strong>选1981年以后的耐震物件</strong>（新耐震基准），银行估价更高、租客接受度更好。</div>
+    </div>
+    <div class="advice-row">
+      <div class="advice-dot red"></div>
+      <div class="advice-text"><strong>避开市街化調整区域</strong>，该区域用途变更受限，シェアハウス运营可能有法规障碍。</div>
+    </div>
+    <div class="advice-row">
+      <div class="advice-dot red"></div>
+      <div class="advice-text"><strong>改装前必须请建筑士确认消防设备要求</strong>，多人居住需安装煙感知器・避難器具等，遗漏可能被勒令停业。</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    ⚠ 本工具仅供参考，不构成投资建议。实际贷款条件、租金行情、改装费用因物件而异。<br>
+    贷款条件基于法人不動産担保ローン（ノンバンク）参考利率。实际申请请咨询金融机构。<br>
+    埼玉外国人向けシェアハウス家賃数据来源：ひつじ不動産・シェアパレ・シェアーズ（2025年调查）
+  </div>
+
+</div>
+<script>
+function fmtMan(n) { return Math.round(n / 10000) + '万円'; }
+function fmtManDec(n) { return (Math.round(n / 1000) / 10).toFixed(1) + '万円'; }
+
+function calc() {
+  const price  = +document.getElementById('price').value * 10000;
+  const down   = +document.getElementById('down').value * 10000;
+  const reform = +document.getElementById('reform').value * 10000;
+  const rooms  = +document.getElementById('rooms').value;
+  const rent   = +document.getElementById('rent').value;
+  const occ    = +document.getElementById('occ').value / 100;
+  const rateA  = +document.getElementById('rate').value / 100;
+  const years  = +document.getElementById('years').value;
+  const opex   = +document.getElementById('opex').value;
+
+  document.getElementById('price-v').textContent  = document.getElementById('price').value + '万';
+  document.getElementById('down-v').textContent   = document.getElementById('down').value + '万';
+  document.getElementById('reform-v').textContent = document.getElementById('reform').value + '万';
+  document.getElementById('rate-v').textContent   = (+document.getElementById('rate').value).toFixed(1) + '%';
+  document.getElementById('years-v').textContent  = years + '年';
+  document.getElementById('rooms-v').textContent  = rooms + '间';
+  document.getElementById('rent-v').textContent   = (rent / 10000).toFixed(1) + '万';
+  document.getElementById('occ-v').textContent    = Math.round(occ * 100) + '%';
+  document.getElementById('opex-v').textContent   = (opex / 10000).toFixed(1) + '万';
+
+  const loanAmt = price - down;
+  const n = years * 12;
+  const r = rateA / 12;
+  const monthlyLoan = r === 0 ? loanAmt / n : loanAmt * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1);
+  const totalInterest = monthlyLoan * n - loanAmt;
+
+  const fullRent  = rooms * rent;
+  const grossRent = fullRent * occ;
+  const netIncome = grossRent - opex;
+  const profit    = netIncome - monthlyLoan;
+  const annProfit = profit * 12;
+  const selfFund  = down + reform + 500000 + 400000;
+  const roi       = selfFund > 0 ? (annProfit / selfFund) * 100 : 0;
+
+  document.getElementById('r-income').textContent     = fmtManDec(netIncome);
+  document.getElementById('r-income-sub').textContent = '満室時 ' + fmtManDec(fullRent);
+  document.getElementById('r-loan').textContent       = fmtManDec(monthlyLoan);
+  document.getElementById('r-loan-sub').textContent   = years + '年·' + (rateA*100).toFixed(1) + '%';
+  document.getElementById('r-profit').textContent     = fmtManDec(Math.abs(profit));
+
+  const pc = document.getElementById('profit-card');
+  const pl = document.getElementById('r-profit-label');
+  const ps = document.getElementById('r-profit-sub');
+  const sm = document.getElementById('summary');
+
+  if (profit > 0) {
+    pc.className = 'result-card green';
+    pl.textContent = '月净剩余 ✓';
+    ps.textContent = '年收 ' + fmtMan(annProfit);
+    sm.className = 'summary green';
+    sm.innerHTML = '✅ 还完贷款后每月还剩 <strong>' + fmtManDec(profit) + '</strong>，年净收 <strong>' + fmtMan(annProfit) + '</strong>，自有资金回报率约 <strong>' + roi.toFixed(1) + '%</strong>。';
+  } else {
+    pc.className = 'result-card red';
+    pl.textContent = '月亏损 ✗';
+    ps.textContent = '请调整参数';
+    sm.className = 'summary red';
+    sm.innerHTML = '❌ 当前设定每月亏损 <strong>' + fmtManDec(-profit) + '</strong>。建议：降低物件价格 / 增加出租间数 / 提高每间租金 / 延长贷款年数。';
+  }
+
+  document.getElementById('d-price').textContent    = fmtMan(price);
+  document.getElementById('d-reform').textContent   = fmtMan(reform);
+  document.getElementById('d-total').textContent    = fmtMan(price + reform + 500000 + 400000);
+  document.getElementById('d-down').textContent     = fmtMan(down);
+  document.getElementById('d-loanamt').textContent  = fmtMan(loanAmt);
+  document.getElementById('d-full').textContent     = fmtManDec(fullRent);
+  document.getElementById('d-real').textContent     = fmtManDec(grossRent);
+  document.getElementById('d-opex').textContent     = fmtManDec(opex);
+  document.getElementById('d-interest').textContent = fmtMan(totalInterest);
+  document.getElementById('d-annual').textContent   = profit > 0 ? fmtMan(annProfit) : '—';
+  document.getElementById('d-roi').textContent      = profit > 0 ? roi.toFixed(1) + '%' : '—';
+}
+
+calc();
+</script>
+</body>
+</html>
